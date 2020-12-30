@@ -1,4 +1,4 @@
-import urllib, json, requests, boto3
+import urllib, json, requests, boto3, secrets
 import logging
 import hashlib
 
@@ -96,7 +96,6 @@ def ddb_create(table, **kwargs):
   logger.info("About to put item, params={p}".format(p=params))
   ddb.put_item(**params)
   logger.info("Item created.")
-  
 
 def get_ddb_item(table, **kwargs):
   """
@@ -184,9 +183,33 @@ def get_ddb_items(table, **kwargs):
   return flattened_items
 
 def hash_password(password, salt = None):
+  """
+  Hash a password with salt if provided
+  """
   m = hashlib.sha3_256()
   to_hash = password
   if salt:
     to_hash = "{salt}{password}".format(salt=salt, password=password)
   m.update(to_hash.encode("utf-8"))
   return m.hexdigest()
+
+def create_user(table, realm, user, password, salt):
+  """
+  Create/update a user
+  """
+  params = {
+    "p_realm": realm,
+    "p_user": user,
+    "p_scopes": ["admin"]
+  }
+  if salt == "yes":
+    salt = secrets.token_hex(32)
+    params.update({
+      "p_salt": salt,
+      "p_password": hash_password(password, salt)
+    })
+  else:
+    params.update({
+      "p_password": hash_password(password)
+    })
+  ddb_create(table, **params)
