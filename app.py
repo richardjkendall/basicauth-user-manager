@@ -1,9 +1,10 @@
 import json
 import logging
 import os
+import secrets
 
 from flask import Flask, render_template, request
-from utils import success_json_response, get_ddb_items, summarise_dict, filter_dict, get_ddb_item
+from utils import success_json_response, get_ddb_items, summarise_dict, filter_dict, get_ddb_item, hash_password, ddb_create
 
 app = Flask(__name__,
             static_url_path="/static",
@@ -56,3 +57,41 @@ def get_user(realm, user):
   return success_json_response({
     "data": item
   })
+
+@app.route("/api/realm/<string:realm>/user/<string:user>", methods=["POST"])
+def update_user(realm, user):
+  item = get_ddb_item(table = DDB_TABLE, p_realm = realm, p_user = user)
+  if request.json:
+    if "password" not in request.json:
+      return success_json_response({
+        "error": "'password' field is mandatory"
+      })
+    if "salt" not in request.json:
+      return success_json_response({
+        "error": "'salt' field is mandatory"
+      })
+    if request.json["salt"] not in ["yes", "no"]:
+      return success_json_response({
+        "error": "'salt' field can only be 'yes' or 'no'"
+      })
+    params = {
+      "p_realm": realm,
+      "p_user": user,
+      "p_scopes": ["admin"]
+    }
+    if request.json["salt"] == "yes":
+      salt = secrets.token_hex(32)
+      params.update({
+        "p_salt": salt,
+        "p_password": hash_password(request.json["password"], salt)
+      })
+    else:
+      params.update({
+        "p_password": hash_password(request.json["password"])
+      })
+    ddb_create(table = DDB_TABLE, **params)
+    return get_user(realm, user)
+  else:
+    return success_json_response({
+      "error": "Request must be JSON."
+    })

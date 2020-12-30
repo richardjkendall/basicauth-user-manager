@@ -1,5 +1,7 @@
 import urllib, json, requests, boto3
 import logging
+import hashlib
+
 from flask import make_response, jsonify
 
 logger = logging.getLogger(__name__)
@@ -28,9 +30,14 @@ def dh_wrap_field(field):
   Wraps a field value for DynamoDB
   """
   if isinstance(field, str):
-      return {"S": field}
+    return {"S": field}
+  elif isinstance(field, list):
+    wrapped_list = []
+    for item in field:
+      wrapped_list.append(dh_wrap_field(item))
+    return {"L": wrapped_list}
   else:
-      return {"N": str(field)}
+    return {"N": str(field)}
 
 def split_name(key):
   """
@@ -75,6 +82,21 @@ def filter_dict(table, allowed_fields):
   for row in table:
     filtered_rows.append({key: row[key] for key in allowed_fields})
   return filtered_rows
+
+def ddb_create(table, **kwargs):
+  """
+  Creates an item containing the fields in kwargs
+  """
+  ddb = boto3.client("dynamodb")
+  attributes = {split_name(k):dh_wrap_field(v) for (k,v) in kwargs.items()}
+  params = {
+    "TableName": table,
+    "Item": attributes
+  }
+  logger.info("About to put item, params={p}".format(p=params))
+  ddb.put_item(**params)
+  logger.info("Item created.")
+  
 
 def get_ddb_item(table, **kwargs):
   """
@@ -161,3 +183,10 @@ def get_ddb_items(table, **kwargs):
     flattened_items.append(flattened_item)
   return flattened_items
 
+def hash_password(password, salt = None):
+  m = hashlib.sha3_256()
+  to_hash = password
+  if salt:
+    to_hash = "{salt}{password}".format(salt=salt, password=password)
+  m.update(to_hash.encode("utf-8"))
+  return m.hexdigest()
