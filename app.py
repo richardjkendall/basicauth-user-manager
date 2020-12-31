@@ -112,3 +112,9 @@ def update_user(realm, user):
     return success_json_response({
       "error": "Request must be JSON."
     })
+
+@app.after_request
+def after_request(response):
+    header = response.headers
+    header['Access-Control-Allow-Origin'] = '*'
+    return response
