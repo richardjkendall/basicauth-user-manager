@@ -97,6 +97,20 @@ def ddb_create(table, **kwargs):
   ddb.put_item(**params)
   logger.info("Item created.")
 
+def del_ddb_item(table, **kwargs):
+  """
+  Delete item from ddb table using keys (expected to be in kwargs)
+  """
+  ddb = boto3.client("dynamodb")
+  keys_for_dynamo = {split_name(k): dh_wrap_field(v) for (k,v) in kwargs.items()}
+  params = {
+    "TableName": table,
+    "Key": keys_for_dynamo
+  }
+  logger.info("Getting item using params {p}".format(p=params))
+  response = ddb.delete_item(**params)
+  logger.info("Item deleted.")
+
 def get_ddb_item(table, **kwargs):
   """
   Get item from ddb table using keys (expected to be in kwargs)

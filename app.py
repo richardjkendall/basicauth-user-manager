@@ -3,12 +3,12 @@ import logging
 import os
 import secrets
 
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, redirect
 from flask_cors import CORS
-from utils import success_json_response, get_ddb_items, summarise_dict, filter_dict, get_ddb_item, create_user
+from utils import success_json_response, get_ddb_items, summarise_dict, filter_dict, get_ddb_item, create_user, del_ddb_item
 
 app = Flask(__name__,
-            static_url_path="/static",
+            static_url_path="/",
             static_folder="static")
 CORS(app)
 
@@ -59,6 +59,10 @@ if ADMIN_REALM and ADMIN_USER and ADMIN_PASSWORD and ADMIN_SALT:
 else:
   logger.error("The details needed to set the admin user password are not present in the environment.")
 
+@app.route("/")
+def gotoindex():
+  return redirect("/index.html", code=301)
+
 @app.route("/api")
 def root():
   return success_json_response({
@@ -78,6 +82,19 @@ def get_realm(realm):
   return success_json_response({
     "data": filter_dict(items, ["realm", "user"])
   })
+
+@app.route("/api/realm/<string:realm>/user/<string:user>", methods=["DELETE"])
+def remove_user(realm, user):
+  item = get_ddb_item(table = DDB_TABLE, p_realm = realm, p_user = user)
+  if(item):
+    resp = del_ddb_item(table = DDB_TABLE, p_realm = realm, p_user = user)
+    return success_json_response({
+      "status": "deleted"
+    })
+  else:
+    return success_json_response({
+      "status": "item does not exist"
+    })
 
 @app.route("/api/realm/<string:realm>/user/<string:user>", methods=["GET"])
 def get_user(realm, user):

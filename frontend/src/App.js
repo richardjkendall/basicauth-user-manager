@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import { Grommet, Box, Heading, Text, TextInput, Button, Menu, Layer, Select, FormField, DataTable, CheckBox } from 'grommet';
-import { Menu as MenuIcon, Next, Previous } from 'grommet-icons'
+import { Menu as MenuIcon } from 'grommet-icons'
 import { grommet } from "grommet/themes";
 
 import ApiHandler from './Api';
@@ -8,7 +8,6 @@ import ApiHandler from './Api';
 import './App.css';
 
 const RealmList = (props) => {
-  const [value, setValue] = React.useState("");
 
   return (
     <FormField label="Select realm">
@@ -256,9 +255,7 @@ const AddUser = (props) => {
 class App extends Component { 
   constructor(props) {
     super(props);
-
     this.apiClient = new ApiHandler();
-
     this.state = {
       realms: [],
       selectedRealm: "",
@@ -280,10 +277,18 @@ class App extends Component {
   }
 
   userAddSuccessCallback(user, realm) {
-    this.setState({
-      addUserOpen: false,
-      selectedRealm: realm
-    });
+    if(!this.state.realms.includes(realm)) {
+      this.setState({
+        realms: this.state.realms.concat([realm]),
+        addUserOpen: false,
+        selectedRealm: realm
+      });
+    } else {
+      this.setState({
+        addUserOpen: false,
+        selectedRealm: realm
+      });
+    }
     this.updateRealm(realm);
     this.selectUser(user);
   }
@@ -305,20 +310,37 @@ class App extends Component {
       selectedUser: "n/a"
     });
     this.apiClient.getUsers(realm, (data) => {
-      console.log("users", data.data);
-      this.setState({
-        users: data.data
-      });
+      if(data.data.length === 0) {
+        // need to remove the realm as there are no users any more
+        const newRealms = this.state.realms.filter(realm => realm !== this.state.selectedRealm);
+        this.setState({
+          realms: newRealms,
+          users: []
+        });
+      } else {
+        this.setState({
+          users: data.data
+        });
+      }
     }, () => {
       console.log("error getting users");
     });
   }
 
   selectUser(user) {
-    console.log("selecting user", user);
     this.setState({
       selectedUser: user
     });
+  }
+
+  deleteUser(realm, user) {
+    if(this.state.selectedUser !== "n/a" && this.state.selectedRealm !== "") {
+      this.apiClient.delUser(this.state.selectedRealm, this.state.selectedUser, (data) => {
+        this.updateRealm(this.state.selectedRealm);
+      }, () => {
+        console.log("error deleting user");
+      });
+    }
   }
 
   render() {
@@ -344,7 +366,7 @@ class App extends Component {
           </Box>
           <Footer 
               add={this.openAddUserWindow.bind(this)} 
-              remove={() => {}}
+              remove={this.deleteUser.bind(this)}
             />
         </Box>
         <AddUser

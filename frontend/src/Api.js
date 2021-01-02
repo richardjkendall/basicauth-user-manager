@@ -1,15 +1,24 @@
 import axios from 'axios';
 
+const API_BASE = "";
+
 class ApiHandler {
-    constructor() {
-        
+
+    delUser(realm, user, success_callback, failure_callback) {
+        axios({
+            method: "delete",
+            url: API_BASE + "api/realm/" + realm + "/user/" + user,
+        }).then(function(response) {
+            success_callback(response.data);
+        }).catch(function(error) {
+            failure_callback();
+        });
     }
 
     addUser(realm, user, password, salt, success_callback, failure_callback) {
-        var self = this;
         axios({
             method: "post",
-            url: "http://localhost:5000/api/realm/" + realm + "/user/" + user,
+            url: API_BASE + "/api/realm/" + realm + "/user/" + user,
             responseType: "json",
             data: {
                 password: password,
@@ -19,14 +28,13 @@ class ApiHandler {
             success_callback(response.data);
         }).catch(function(error) {
             failure_callback();
-        })
+        });
     }
 
     getRealms(success_callback, failure_callback) {
-        var self = this;
         axios({
             method: "get",
-            url: "http://localhost:5000/api/realm",
+            url: API_BASE + "/api/realm",
             responseType: "json",
         }).then(function(response) {
             success_callback(response.data);
@@ -36,10 +44,9 @@ class ApiHandler {
     }
 
     getUsers(realm, success_callback, failure_callback) {
-        var self = this;
         axios({
             method: "get",
-            url: "http://localhost:5000/api/realm/" + realm,
+            url: API_BASE + "/api/realm/" + realm,
             responseType: "json",
         }).then(function(response) {
             success_callback(response.data);
