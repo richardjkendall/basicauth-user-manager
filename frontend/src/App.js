@@ -100,7 +100,7 @@ const AddUser = (props) => {
   const [useSalt, setUseSalt] = React.useState(true);
 
   const [controlsDisabled, setControlsDisabled] = React.useState(false);
-  const [userAdded, setUserAdded] = React.useState(false);
+  //const [userAdded, setUserAdded] = React.useState(false);
   const [error, setError] = React.useState("");
 
   const callAddUser = function() {
@@ -120,7 +120,7 @@ const AddUser = (props) => {
               setRepeatPassword("");
               setUseSalt(true)
               setError("");
-              setUserAdded(true);
+              //setUserAdded(true);
 
               closeAddedSuccessWindow();
 
@@ -142,7 +142,7 @@ const AddUser = (props) => {
   }
 
   const closeAddedSuccessWindow = function() {
-    setUserAdded(false);
+    //setUserAdded(false);
     props.success(user, realm);
   }
 
