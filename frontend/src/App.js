@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Grommet, Box, Heading, Text, TextInput, Button, Menu, Layer, Select, FormField, DataTable } from 'grommet';
+import { Grommet, Box, Heading, Text, TextInput, Button, Menu, Layer, Select, FormField, DataTable, CheckBox } from 'grommet';
 import { Menu as MenuIcon, Next, Previous } from 'grommet-icons'
 import { grommet } from "grommet/themes";
 
@@ -93,6 +93,8 @@ const UserTable = (props) => {
 };
 
 const AddUser = (props) => {
+  const [newRealm, setNewRealm] = React.useState(false);
+  const [realm, setRealm] = React.useState("");
   const [user, setUser] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [repeatPassword, setRepeatPassword] = React.useState("");
@@ -104,34 +106,50 @@ const AddUser = (props) => {
 
   const callAddUser = function() {
     console.log("in calladduser", user);
-    if(user !== "") {
-      setControlsDisabled(true);
-      var apiClient = new ApiHandler();
-      apiClient.addUser(user, password, useSalt, (data) => {
-        console.log(data);
-        setControlsDisabled(false);
-        setUser("");
-        setPassword("");
-        setRepeatPassword("");
-        setUseSalt(true)
-        setError("");
-        setUserAdded(true);
-      }, () => {
-        console.log("error adding user");
-      });
+    if(realm !== "") {
+      if(user !== "") {
+        if(password !== "") {
+          if(password === repeatPassword) {
+            setControlsDisabled(true);
+            var apiClient = new ApiHandler();
+            apiClient.addUser(realm, user, password, useSalt, (data) => {
+              console.log(data);
+              setControlsDisabled(false);
+              setRealm("");
+              setUser("");
+              setPassword("");
+              setRepeatPassword("");
+              setUseSalt(true)
+              setError("");
+              setUserAdded(true);
+
+              closeAddedSuccessWindow();
+
+            }, () => {
+              console.log("error adding user");
+            });
+          } else {
+            setError("Passwords must match");
+          }
+        } else {
+          setError("Password cannot be blank");
+        }
+      } else {
+        setError("Username cannot be blank");
+      }
     } else {
-      setError("Username cannot be blank");
+      setError("Realm cannot be blank");
     }
   }
 
   const closeAddedSuccessWindow = function() {
     setUserAdded(false);
-    
-    props.success(user);
+    props.success(user, realm);
   }
 
   const closeAndClear = function() {
     setControlsDisabled(false);
+    setRealm("");
     setUser("");
     setPassword("");
     setRepeatPassword("");
@@ -147,7 +165,59 @@ const AddUser = (props) => {
         <Layer position="center" modal onClickOutside={closeAndClear} onEsc={closeAndClear}>
           <Box pad="medium" gap="small" width="large">
             <Heading level={3} margin="none">Add New User</Heading>
-            
+            <FormField label="Realm">
+              {!newRealm && <Select
+                options={["<new>"].concat(props.realms)}
+                value={realm}
+                onChange={({option}) => {
+                  if(option === "<new>") {
+                    setNewRealm(true);
+                  } else {
+                    setRealm(option);
+                  }
+                }}
+              />}
+              {newRealm && <TextInput
+                placeholder="Realm..."
+                value={realm}
+                onChange={event => setRealm(event.target.value)}
+                disabled={controlsDisabled}
+              />}
+            </FormField>
+            <FormField label="Username">
+              <TextInput 
+                placeholder="Username..."
+                value={user}
+                onChange={event => setUser(event.target.value)}
+                disabled={controlsDisabled}
+              />
+            </FormField>
+            <FormField label="Password">
+              <TextInput 
+                placeholder="Password..."
+                value={password}
+                type="password"
+                onChange={event => setPassword(event.target.value)}
+                disabled={controlsDisabled}
+              />
+            </FormField>
+            <FormField label="Repeat password">
+              <TextInput 
+                placeholder="Repeat password..."
+                value={repeatPassword}
+                type="password"
+                onChange={event => setRepeatPassword(event.target.value)}
+                disabled={controlsDisabled}
+                label="Repeat password"
+              />
+            </FormField>
+            <FormField>
+              <CheckBox
+                checked={useSalt}
+                onChange={(event) => setUseSalt(event.target.checked)}
+                label="Salt password hash?"
+              />
+            </FormField>
             {error!=="" && 
             <Text color="status-error">{error}</Text>}
             <Box 
@@ -167,7 +237,7 @@ const AddUser = (props) => {
               <Button
                 label={
                   <Text color="white">
-                    <strong>Add Link</strong>
+                    <strong>Add User</strong>
                   </Text>
                 }
                 primary
@@ -176,7 +246,6 @@ const AddUser = (props) => {
               />
             </Box>
           </Box>
-          
         </Layer>
       )}
     </div>
@@ -210,10 +279,13 @@ class App extends Component {
     });
   }
 
-  userAddSuccessCallback(user) {
+  userAddSuccessCallback(user, realm) {
     this.setState({
-      addUserOpen: false
+      addUserOpen: false,
+      selectedRealm: realm
     });
+    this.updateRealm(realm);
+    this.selectUser(user);
   }
 
   componentDidMount() {
@@ -279,6 +351,7 @@ class App extends Component {
           open={this.state.addUserOpen}
           close={this.closeAddUserWindow.bind(this)}
           success={this.userAddSuccessCallback.bind(this)}
+          realms={this.state.realms}
         />
       </Grommet>
     )

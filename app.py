@@ -4,11 +4,13 @@ import os
 import secrets
 
 from flask import Flask, render_template, request
+from flask_cors import CORS
 from utils import success_json_response, get_ddb_items, summarise_dict, filter_dict, get_ddb_item, create_user
 
 app = Flask(__name__,
             static_url_path="/static",
             static_folder="static")
+CORS(app)
 
 # set logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] (%(threadName)-10s) %(message)s')
@@ -113,8 +115,8 @@ def update_user(realm, user):
       "error": "Request must be JSON."
     })
 
-@app.after_request
-def after_request(response):
-    header = response.headers
-    header['Access-Control-Allow-Origin'] = '*'
-    return response
+#@app.after_request
+#def after_request(response):
+#    header = response.headers
+#    header['Access-Control-Allow-Origin'] = '*'
+#    return response
