@@ -38,6 +38,7 @@ jobs:
       - name: Build UI
         run: |
           cd frontend
+          npm ci
           npm run build
           cd ..
       
