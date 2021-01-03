@@ -45,5 +45,5 @@ jobs:
       - name: build and push
         run: |
           docker build -t basicauth-user-manager .
-          docker tag keycloak-user-browser:latest public.ecr.aws/z7f7v2i3/basicauth-user-manager:latest
+          docker tag basicauth-user-manager:latest public.ecr.aws/z7f7v2i3/basicauth-user-manager:latest
           docker push public.ecr.aws/z7f7v2i3/basicauth-user-manager:latest

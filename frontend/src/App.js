@@ -1,11 +1,9 @@
-import React, { Component } from 'react';
+import React, { Component, useEffect } from 'react';
 import { Grommet, Box, Heading, Text, TextInput, Button, Menu, Layer, Select, FormField, DataTable, CheckBox } from 'grommet';
 import { Menu as MenuIcon } from 'grommet-icons'
 import { grommet } from "grommet/themes";
 
 import ApiHandler from './Api';
-
-import './App.css';
 
 const RealmList = (props) => {
 
@@ -60,6 +58,7 @@ const Footer = (props) => (
     flex={false}
   >
     <Button label='Remove' color='border' onClick={() => {props.remove()}} />
+    {props.editEnabled && <Button label='Edit' onClick={() => {props.edit()}} />}
     <Button label='Add' primary={true} onClick={() => {props.add()}} />
   </Box>
 );
@@ -85,7 +84,6 @@ const UserTable = (props) => {
         primaryKey="user" 
         data={props.users}
         rowProps={rowProps}
-        //onSearch={(event) => {this.props.updateSearch(event)}}
       />
     </Box>
   )
@@ -100,8 +98,16 @@ const AddUser = (props) => {
   const [useSalt, setUseSalt] = React.useState(true);
 
   const [controlsDisabled, setControlsDisabled] = React.useState(false);
-  //const [userAdded, setUserAdded] = React.useState(false);
   const [error, setError] = React.useState("");
+
+  useEffect(() => {
+    setRealm(props.realm);
+    if(props.user === "n/a") {
+      setUser("");
+    } else {
+      setUser(props.user);
+    }
+  }, [props.user, props.realm, props.open, setUser, setRealm])
 
   const callAddUser = function() {
     console.log("in calladduser", user);
@@ -120,7 +126,6 @@ const AddUser = (props) => {
               setRepeatPassword("");
               setUseSalt(true)
               setError("");
-              //setUserAdded(true);
 
               closeAddedSuccessWindow();
 
@@ -142,7 +147,6 @@ const AddUser = (props) => {
   }
 
   const closeAddedSuccessWindow = function() {
-    //setUserAdded(false);
     props.success(user, realm);
   }
 
@@ -171,6 +175,7 @@ const AddUser = (props) => {
                 onChange={({option}) => {
                   if(option === "<new>") {
                     setNewRealm(true);
+                    setRealm("");
                   } else {
                     setRealm(option);
                   }
@@ -260,6 +265,7 @@ class App extends Component {
       realms: [],
       selectedRealm: "",
       users: [],
+      selectedUser: "n/a",
       addUserOpen: false
     };
   } 
@@ -366,6 +372,8 @@ class App extends Component {
           </Box>
           <Footer 
               add={this.openAddUserWindow.bind(this)} 
+              edit={this.openAddUserWindow.bind(this)}
+              editEnabled={this.state.selectedUser !== "n/a"}
               remove={this.deleteUser.bind(this)}
             />
         </Box>
@@ -374,6 +382,8 @@ class App extends Component {
           close={this.closeAddUserWindow.bind(this)}
           success={this.userAddSuccessCallback.bind(this)}
           realms={this.state.realms}
+          user={this.state.selectedUser}
+          realm={this.state.selectedRealm}
         />
       </Grommet>
     )

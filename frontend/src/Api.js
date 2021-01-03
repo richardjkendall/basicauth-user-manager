@@ -1,13 +1,14 @@
 import axios from 'axios';
 
 const API_BASE = "";
+//const API_BASE = "http://localhost:5000";
 
 class ApiHandler {
 
     delUser(realm, user, success_callback, failure_callback) {
         axios({
             method: "delete",
-            url: API_BASE + "api/realm/" + realm + "/user/" + user,
+            url: API_BASE + "/api/realm/" + realm + "/user/" + user,
         }).then(function(response) {
             success_callback(response.data);
         }).catch(function(error) {
