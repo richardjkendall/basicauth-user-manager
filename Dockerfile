@@ -15,4 +15,4 @@ ADD frontend/build /app/static
 
 # run gunicorn
 WORKDIR /app
-CMD [ "gunicorn", "--bind", "0.0.0.0:5000", "--forwarded-allow-ips=\"*\"" "-w", "4", "app:app"]
+CMD [ "gunicorn", "--bind", "0.0.0.0:5000", "--forwarded-allow-ips=\"*\"", "-w", "4", "app:app"]
