@@ -61,6 +61,8 @@ else:
 
 @app.route("/")
 def gotoindex():
+  for key,value in dict(request.headers).items():
+    logger.info("{key} -> {val}".format(key=key, val=value))
   return redirect("/index.html", code=301)
 
 @app.route("/api")
