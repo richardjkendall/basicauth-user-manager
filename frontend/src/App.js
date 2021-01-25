@@ -57,9 +57,9 @@ const Footer = (props) => (
     gap='small'
     flex={false}
   >
-    <Button label='Remove' color='border' onClick={() => {props.remove()}} />
+    <Button label='Remove' color='border' onClick={() => {props.remove()}} disabled={!props.editEnabled} />
     {props.editEnabled && <Button label='Edit' onClick={() => {props.edit()}} />}
-    <Button label='Add' primary={true} onClick={() => {props.add()}} />
+    {props.addEnabled && <Button label='Add' primary={true} onClick={() => {props.add()}} />}
   </Box>
 );
 
@@ -78,7 +78,11 @@ const UserTable = (props) => {
         ]}
         onClickRow={
           event => {
-            props.selectUser(event.datum.user);
+            if(event.datum.user === props.selectedUser) {
+              props.selectUser("n/a");
+            } else {
+              props.selectUser(event.datum.user);
+            }
           }
         }
         primaryKey="user" 
@@ -96,6 +100,7 @@ const AddUser = (props) => {
   const [password, setPassword] = React.useState("");
   const [repeatPassword, setRepeatPassword] = React.useState("");
   const [useSalt, setUseSalt] = React.useState(true);
+  const [editMode, setEditMode] = React.useState(false);
 
   const [controlsDisabled, setControlsDisabled] = React.useState(false);
   const [error, setError] = React.useState("");
@@ -104,8 +109,10 @@ const AddUser = (props) => {
     setRealm(props.realm);
     if(props.user === "n/a") {
       setUser("");
+      setEditMode(false);
     } else {
       setUser(props.user);
+      setEditMode(true);
     }
   }, [props.user, props.realm, props.open, setUser, setRealm])
 
@@ -167,7 +174,7 @@ const AddUser = (props) => {
       {props.open && (
         <Layer position="center" modal onClickOutside={closeAndClear} onEsc={closeAndClear}>
           <Box pad="medium" gap="small" width="large">
-            <Heading level={3} margin="none">Add New User</Heading>
+            <Heading level={3} margin="none">{editMode ? "Edit" : "Add New"} User</Heading>
             <FormField label="Realm">
               {!newRealm && <Select
                 options={["<new>"].concat(props.realms)}
@@ -241,7 +248,7 @@ const AddUser = (props) => {
               <Button
                 label={
                   <Text color="white">
-                    <strong>Add User</strong>
+                    <strong>{editMode ? "Edit" : "Add"} User</strong>
                   </Text>
                 }
                 primary
@@ -257,6 +264,48 @@ const AddUser = (props) => {
 
 };
 
+const QuestionBox = (props) => {
+  return(
+    <div>
+      {props.open &&
+        <Layer position="center" modal onClickOutside={props.noAction} onEsc={props.noAction}>
+          <Box pad="medium" gap="small" width="large">
+            <Heading level={3} margin="none">{props.title}</Heading>
+            <Text>{props.message}</Text>
+            <Box 
+              as="footer"
+              gap="small"
+              direction="row"
+              align="center"
+              justify="end"
+              pad={{top: "medium", bottom: "small"}}
+            >
+              <Button
+                label={
+                  <Text color="white">
+                    <strong>No</strong>
+                  </Text>
+                }
+                primary
+                onClick={props.noAction}
+              />
+              <Button
+                label={
+                  <Text color="white">
+                    <strong>Yes</strong>
+                  </Text>
+                }
+                primary
+                onClick={props.yesAction}
+              />
+            </Box>
+          </Box>
+        </Layer>
+      }
+    </div>
+  )
+};
+
 class App extends Component { 
   constructor(props) {
     super(props);
@@ -266,7 +315,9 @@ class App extends Component {
       selectedRealm: "",
       users: [],
       selectedUser: "n/a",
-      addUserOpen: false
+      addUserOpen: false,
+      deleteMessageOpen: false,
+      deleteMessage: ""
     };
   } 
 
@@ -343,10 +394,23 @@ class App extends Component {
     if(this.state.selectedUser !== "n/a" && this.state.selectedRealm !== "") {
       this.apiClient.delUser(this.state.selectedRealm, this.state.selectedUser, (data) => {
         this.updateRealm(this.state.selectedRealm);
+        this.closeDeleteQuestion();
       }, () => {
         console.log("error deleting user");
       });
     }
+  }
+
+  openDeleteQuestion() {
+    this.setState({
+      deleteMessageOpen: true
+    });
+  }
+
+  closeDeleteQuestion() {
+    this.setState({
+      deleteMessageOpen: false
+    });
   }
 
   render() {
@@ -374,7 +438,8 @@ class App extends Component {
               add={this.openAddUserWindow.bind(this)} 
               edit={this.openAddUserWindow.bind(this)}
               editEnabled={this.state.selectedUser !== "n/a"}
-              remove={this.deleteUser.bind(this)}
+              addEnabled={this.state.selectedUser === "n/a"}
+              remove={this.openDeleteQuestion.bind(this)}
             />
         </Box>
         <AddUser
@@ -384,6 +449,13 @@ class App extends Component {
           realms={this.state.realms}
           user={this.state.selectedUser}
           realm={this.state.selectedRealm}
+        />
+        <QuestionBox
+          open={this.state.deleteMessageOpen}
+          title="Delete User?"
+          message={"Do you want to delete user: " + this.state.selectedUser + " from realm " + this.state.selectedRealm}
+          yesAction={this.deleteUser.bind(this)}
+          noAction={this.closeDeleteQuestion.bind(this)}
         />
       </Grommet>
     )
